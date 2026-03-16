@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Certified Portal - Secure Eastfield Edition</title>
+    <script src="https://cdnjs.cloudflare.com"></script>
+    <script src="https://cdn.jsdelivr.net"></script>
+    
+    <style>
+        :root { 
+            --primary: #2c3e50; --success: #27ae60; --pdf: #e74c3c; 
+            --cloud: #3498db; --github: #24292e; --bg: #f4f7f6; 
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        /* Password Gate Styling */
+        #authGate { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; margin-top: 100px; }
+        
+        /* Hide main content until authenticated */
+        #mainContent { display: none; width: 100%; max-width: 800px; }
+
+        .container { background: white; width: 100%; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
+        .view { display: none; }
+        .view.active { display: block; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; color: #444; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .scan-box { border: 2px dashed var(--cloud); padding: 20px; text-align: center; background: #ebf5fb; border-radius: 8px; margin-bottom: 20px; }
+        #previewImage { max-width: 100%; height: auto; display: none; margin-top: 10px; border-radius: 5px; }
+        
+        .btn { padding: 14px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; transition: 0.3s; color: white; }
+        .btn-blue { background: var(--primary); }
+        .btn-print { background: var(--pdf); }
+        .btn-cloud { background: var(--cloud); }
+        .btn-github { background: var(--github); }
+        .btn-success { background: var(--success); }
+        .btn-copy { background: #9b59b6; }
+        .btn-logout { background: #95a5a6; width: auto; padding: 8px 15px; position: absolute; top: 10px; right: 10px; font-size: 0.8rem; }
+        .flex-row { display: flex; gap: 10px; }
+        
+        .flow-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; padding: 20px; border: 2px solid #333; }
+            #pImg { max-width: 100%; max-height: 400px; border: 1px solid #000; display: block; margin: 10px auto; }
+            .qr-container { float: right; margin-top: -80px; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="authGate" class="no-print">
+    <h2 style="color:var(--primary);">🔒 Restricted Access</h2>
+    <p>Please enter the portal password to continue.</p>
+    <input type="password" id="portalPass" placeholder="Enter Password" style="margin-bottom: 10px;">
+    <button class="btn btn-blue" onclick="checkGate()">Unlock Portal</button>
+</div>
+
+<!-- MAIN PORTAL CONTENT -->
+<div id="mainContent">
+    <div class="container no-print">
+        <button class="btn btn-logout" onclick="logout()">🔒 Logout</button>
+        <h2 style="text-align:center; color:var(--primary);">🛡️ Certified Cloud Sync Portal</h2>
+
+        <!-- VIEW 1: SCAN -->
+        <div id="view1" class="view active">
+            <label>Subject</label>
+            <select id="subject">
+                <option value="Science">Science (Dr. Smith)</option>
+                <option value="Art">Art (Ms. Derby)</option>
+            </select>
+            <div class="scan-box">
+                <strong>Scan Student Script</strong><br>
+                <input type="file" id="fileInput" accept="image/*" onchange="processScan(event)" style="margin-top:10px;">
+                <img id="previewImage">
+            </div>
+            <label>Student Full Name</label>
+            <input type="text" id="sName" placeholder="Enter Full Name">
+            <button class="btn btn-blue" onclick="showG()">Proceed to Grading ➔</button>
+        </div>
+
+        <!-- VIEW 2: GRADING -->
+        <div id="view2" class="view">
+            <div style="background: #fff9db; padding: 20px; border-radius: 10px; border: 1px solid #ffe066; margin-bottom: 20px;">
+                <h3>Grading: <span id="targetS"></span></h3>
+                <div class="flex-row">
+                    <div style="flex:1"><label>Score (%)</label><input type="number" id="scIn" placeholder="0-100"></div>
+                    <div style="flex:2"><label>Email Address</label><input type="email" id="sEmail" placeholder="parent@example.com"></div>
+                </div>
+                <label>Final Remarks</label>
+                <textarea id="rem" rows="3"></textarea>
+            </div>
+
+            <button class="btn btn-copy" id="copyBtn" onclick="copyData()">📋 Copy Record for Excel</button>
+            <button class="btn btn-print" onclick="generateQRAndPrint()">🖨️ Print Hard Copy</button>
+            
+            <div class="flex-row">
+                <button class="btn btn-cloud" onclick="emailReport()">📧 Email Parent</button>
+                <button class="btn btn-github" onclick="gitHubIssue()">🚀 GitHub Issue</button>
+            </div>
+            
+            <button class="btn btn-success" onclick="cloudUpload()">☁️ Sync to Cloud Records</button>
+            <button class="btn" style="background:none; color:#666;" onclick="showI()">⬅ Back</button>
+        </div>
+    </div>
+
+    <!-- WORKFLOW CHART -->
+    <div class="flow-container no-print">
+        <div class="mermaid">
+            graph LR
+                Start((Scan)) --> Data[Enter Details]
+                Data --> Grade{Grade}
+                Grade --> Copy[Copy]
+                Grade --> PDF[PDF]
+                Grade --> Git[GitHub]
+                Grade --> Cloud[Cloud]
+                classDef p fill:#2c3e50,color:#fff; classDef s fill:#27ae60,color:#fff; classDef c fill:#3498db,color:#fff;
+                class Start,Data p; class Cloud s; class Copy,PDF,Git c;
+        </div>
+    </div>
+</div>
+
+<!-- PRINT AREA (Hidden) -->
+<div id="printArea" class="print-only">
+    <div style="text-align:center; border-bottom: 2px solid #000; margin-bottom: 20px;"><h1>ACADEMIC REPORT CARD</h1></div>
+    <div class="qr-container"><div id="qrcode"></div></div>
+    <p><strong>STUDENT:</strong> <span id="pName"></span></p>
+    <p><strong>SUBJECT:</strong> <span id="pSub"></span></p>
+    <p><strong>SCORE:</strong> <span id="pScore" style="font-weight:bold;"></span></p>
+    <p><strong>TIMESTAMP:</strong> <span id="pTimestamp"></span></p>
+    <p><strong>REMARKS:</strong> <span id="pRem"></span></p>
+    <hr><h3>SUBMITTED SCRIPT</h3><img id="pImg">
+</div>
+
+<script>
+    // Authentication Logic
+    function checkGate() {
+        if (document.getElementById('portalPass').value === "Eastfield") {
+            document.getElementById('authGate').style.display = "none";
+            document.getElementById('mainContent').style.display = "block";
+            mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { 'lineColor': '#3498db', 'primaryTextColor': '#fff' } });
+        } else {
+            alert("Incorrect password.");
+        }
+    }
+
+    function logout() {
+        document.getElementById('portalPass').value = "";
+        document.getElementById('mainContent').style.display = "none";
+        document.getElementById('authGate').style.display = "block";
+    }
+
+    // Portal logic remains the same
+    let scannedImage = "", scanTime = "";
+    function processScan(event) {
+        const reader = new FileReader();
+        reader.onload = () => { scannedImage = reader.result; document.getElementById('previewImage').src = reader.result; document.getElementById('previewImage').style.display = "block"; scanTime = new Date().toLocaleString(); };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+    function showG() {
+        const n = document.getElementById('sName').value;
+        if (!n || !scannedImage) return alert("Upload scan and enter name.");
+        document.getElementById('targetS').innerText = n;
+        document.getElementById('view1').classList.remove('active');
+        document.getElementById('view2').classList.add('active');
+    }
+    function showI() { document.getElementById('view2').classList.remove('active'); document.getElementById('view1').classList.add('active'); }
+    async function copyData() {
+        const text = `${document.getElementById('sName').value}\t${document.getElementById('subject').value}\t${document.getElementById('scIn').value}%\t${scanTime}`;
+        try {
+            await navigator.clipboard.writeText(text);
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "✅ Copied!";
+            setTimeout(() => { btn.innerText = "📋 Copy Record for Excel"; }, 2000);
+        } catch (err) { alert("Copy failed."); }
+    }
+    function generateQRAndPrint() {
+        const name = document.getElementById('sName').value, score = document.getElementById('scIn').value, sub = document.getElementById('subject').value;
+        document.getElementById('qrcode').innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: `VERIFIED: ${name} | ${score}%`, width: 90, height: 90 });
+        document.getElementById('pName').innerText = name; document.getElementById('pSub').innerText = sub;
+        document.getElementById('pScore').innerText = score + "%"; document.getElementById('pRem').innerText = document.getElementById('rem').value;
+        document.getElementById('pTimestamp').innerText = scanTime; document.getElementById('pImg').src = scannedImage;
+        setTimeout(() => { window.print(); }, 500);
+    }
+    function gitHubIssue() {
+        const repo = "YOUR_USERNAME/YOUR_REPO";
+        const title = encodeURIComponent(`Report: ${document.getElementById('sName').value}`);
+        const body = encodeURIComponent(`Student: ${document.getElementById('sName').value}\nScore: ${document.getElementById('scIn').value}%`);
+        window.open(`https://github.com{repo}/issues/new?title=${title}&body=${body}`, '_blank');
+    }
+    function emailReport() {
+        const email = document.getElementById('sEmail').value;
+        if (!email) return alert("Enter email.");
+        window.location.href = `mailto:${email}?subject=Report&body=Certified Score: ${document.getElementById('scIn').value}%`;
+    }
+    function cloudUpload() {
+        const adminEmail = "records@yourschool.com";
+        window.location.href = `mailto:${adminEmail}?subject=CloudSync&body=Manual Sync Request`;
+        window.open('https://drive.google.com', '_blank');
+    }
+</script>
+</body>
+</html>
