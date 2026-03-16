@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS 2 Exam Record System | Photo Edition</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --science-color: #27ae60;
+            --art-color: #e67e22;
+            --bg: #f0f2f5;
+            --pass: #27ae60;
+            --fail: #e74c3c;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+
+        /* AUTH MODAL */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary); z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .auth-card { background: white; padding: 30px; border-radius: 12px; width: 350px; text-align: center; }
+        .auth-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .auth-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* MAIN APP */
+        #main-app { display: none; }
+        .header { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
+        .logout-btn { position: absolute; top: 15px; right: 15px; background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+
+        .tab-box { display: flex; justify-content: center; gap: 10px; margin-bottom: -1px; }
+        .tab { padding: 12px 25px; cursor: pointer; border: none; font-weight: bold; border-radius: 8px 8px 0 0; color: white; opacity: 0.5; }
+        .sci-tab { background: var(--science-color); }
+        .art-tab { background: var(--art-color); }
+        .active-tab { opacity: 1; transform: translateY(-2px); }
+
+        .content { display: none; background: white; padding: 20px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .show { display: block; }
+
+        /* TABLE STYLES */
+        .table-wrap { overflow-x: auto; max-height: 75vh; }
+        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+        thead th { position: sticky; top: 0; background: var(--primary); color: white; padding: 8px; font-size: 11px; z-index: 10; border: 1px solid #34495e; }
+        
+        .name-col { position: sticky; left: 0; background: white; z-index: 15; border-right: 2px solid var(--primary); width: 220px; text-align: left; padding: 8px; }
+        
+        /* Photo Styles */
+        .photo-box { width: 40px; height: 40px; border: 1px solid #ddd; background: #f0f0f0; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 5px; }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .file-input { font-size: 10px; width: 80px; }
+
+        input[type="number"] { width: 40px; padding: 5px; text-align: center; }
+        .total-cell { font-weight: bold; background: #eee; text-align: center; }
+        .avg-cell { font-weight: bold; color: #2980b9; text-align: center; }
+        .remark-cell { font-weight: bold; text-align: center; font-size: 11px; }
+        .pass-text { color: var(--pass); }
+        .fail-text { color: var(--fail); }
+
+        .btn-print { margin-top: 20px; padding: 12px 25px; background: #2c3e50; color: white; border: none; border-radius: 5px; cursor: pointer; float: right; }
+    </style>
+</head>
+<body>
+
+<div id="auth-overlay">
+    <div class="auth-card" id="login-form">
+        <h3>Teacher Login</h3>
+        <input type="text" id="login-user" placeholder="Username">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button class="auth-btn" onclick="handleLogin()">Login</button>
+        <p style="margin-top:15px; cursor:pointer; text-decoration:underline" onclick="toggleAuth()">No account? Sign up</p>
+    </div>
+    <div class="auth-card" id="signup-form" style="display: none;">
+        <h3>Create Account</h3>
+        <input type="text" id="signup-user" placeholder="Choose Username">
+        <input type="password" id="signup-pass" placeholder="Create Password">
+        <button class="auth-btn" onclick="handleSignup()">Sign Up</button>
+        <p style="margin-top:15px; cursor:pointer; text-decoration:underline" onclick="toggleAuth()">Back to Login</p>
+    </div>
+</div>
+
+<div id="main-app">
+    <div class="header">
+        <button class="logout-btn" onclick="location.reload()">Logout</button>
+        <h2>SS 2 Student Score Recording System</h2>
+        <p>Logged in as: <b id="display-user"></b></p>
+    </div>
+
+    <div class="tab-box">
+        <button class="tab sci-tab active-tab" onclick="switchDept('science', this)">SCIENCE DEPT</button>
+        <button class="tab art-tab" onclick="switchDept('art', this)">ART DEPT</button>
+    </div>
+
+    <div id="science" class="content show">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="name-col">Student Info & Photo</th>
+                        <th>Maths</th><th>Phys</th><th>Bio</th><th>Geog</th><th>T.D</th><th>ICT</th><th>Chem</th><th>Econs</th><th>Mark</th><th>Eng</th><th>Civic</th>
+                        <th>TOTAL</th><th>AVG</th><th>REMARK</th>
+                    </tr>
+                </thead>
+                <tbody id="sci-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="art" class="content">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="name-col">Student Info & Photo</th>
+                        <th>Maths</th><th>Bio</th><th>Geog</th><th>ICT</th><th>Econs</th><th>Mark</th><th>Eng</th><th>Civic</th><th>Lit</th><th>CRS</th><th>Govt</th><th>Fin.Acc</th>
+                        <th>TOTAL</th><th>AVG</th><th>REMARK</th>
+                    </tr>
+                </thead>
+                <tbody id="art-body"></tbody>
+            </table>
+        </div>
+    </div>
+    <button class="btn-print" onclick="window.print()">Print Records</button>
+</div>
+
+<script>
+    // --- AUTH LOGIC ---
+    function toggleAuth() {
+        const login = document.getElementById('login-form');
+        const signup = document.getElementById('signup-form');
+        login.style.display = login.style.display === "none" ? "block" : "none";
+        signup.style.display = signup.style.display === "none" ? "block" : "none";
+    }
+
+    function handleSignup() {
+        const u = document.getElementById('signup-user').value;
+        const p = document.getElementById('signup-pass').value;
+        if(u && p) { localStorage.setItem('teacher_' + u, p); alert("Success! Please login."); toggleAuth(); }
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('login-user').value;
+        const p = document.getElementById('login-pass').value;
+        if(localStorage.getItem('teacher_' + u) === p) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-user').innerText = u;
+        } else { alert("Error: Wrong credentials"); }
+    }
+
+    // --- PHOTO UPLOAD LOGIC ---
+    function handleImage(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        const imgDisplay = input.parentElement.querySelector('img');
+
+        reader.onloadend = function() {
+            imgDisplay.src = reader.result;
+            imgDisplay.style.display = "block";
+        }
+        if (file) { reader.readAsDataURL(file); }
+    }
+
+    // --- RECORD SYSTEM LOGIC ---
+    const config = {
+        science: { id: 'sci-body', count: 21, subjects: 11 },
+        art: { id: 'art-body', count: 4, subjects: 12 }
+    };
+
+    function init() {
+        generateTable('science');
+        generateTable('art');
+    }
+
+    function generateTable(dept) {
+        const { id, count, subjects } = config[dept];
+        const tbody = document.getElementById(id);
+        for (let i = 1; i <= count; i++) {
+            let row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="name-col">
+                    <div class="photo-box"><img src=""></div>
+                    <input type="file" class="file-input" accept="image/*" onchange="handleImage(this)">
+                    <input type="text" placeholder="Name" style="border:none; width:100px; margin-top:5px">
+                </td>
+                ${Array(subjects).fill('<td><input type="number" class="score" oninput="calculate(this,'+subjects+')"></td>').join('')}
+                <td class="total-cell">0</td><td class="avg-cell">0.0</td><td class="remark-cell">-</td>`;
+            tbody.appendChild(row);
+        }
+    }
+
+    function calculate(input, subCount) {
+        const row = input.closest('tr');
+        const scores = row.querySelectorAll('.score');
+        let total = 0;
+        scores.forEach(s => {
+            let val = parseFloat(s.value) || 0;
+            if(val > 100) s.value = 100;
+            total += (parseFloat(s.value) || 0);
+        });
+        const avg = (total / subCount).toFixed(1);
+        row.querySelector('.total-cell').innerText = total;
+        row.querySelector('.avg-cell').innerText = avg;
+        const remark = row.querySelector('.remark-cell');
+        remark.innerText = avg >= 40 ? "PASS" : "FAIL";
+        remark.className = "remark-cell " + (avg >= 40 ? "pass-text" : "fail-text");
+    }
+
+    function switchDept(deptId, btn) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('show'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active-tab'));
+        document.getElementById(deptId).classList.add('show');
+        btn.classList.add('active-tab');
+    }
+
+    init();
+</script>
+</body>
+</html>
